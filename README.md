@@ -24,7 +24,7 @@
 Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan Li (* equal contribution)
 
 
-## Overview
+## 📌  Overview
 <p align="center">
   <img src="assets/overview.png" alt="SPECVLM Framework" width="100%"/>
 </p>
@@ -52,7 +52,7 @@ pip install -r requirements.txt
 ```
 
 
-## Download Models & Datasets
+## 🛠 Download Models & Datasets
 - For LLaVA-OneVision models: https://huggingface.co/llava-hf
 - For Qwen2.5-VL models: https://huggingface.co/Qwen 
 - For VideoDetailCaption dataset: https://huggingface.co/datasets/lmms-lab/VideoDetailCaption

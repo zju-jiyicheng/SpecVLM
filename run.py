@@ -1,6 +1,5 @@
 import os
 import torch
-# os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 from tqdm import tqdm
 import json
 import argparse
@@ -18,7 +17,6 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
 
     results = {}
 
-    # Two stages
     results['ar_two_stage_decode'] = []
 
     results['sd_tree_two_stage_decode'] = []
@@ -34,10 +32,8 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
         inputs = clip_input_video(processor, task, data_instance,frame_num = frame_num, model_type = model_type, data_path=data_path)
         if inputs == None:
             continue
-        # print("judge:",inputs['input_ids'].shape[1])
-        if model_type == 'qwen2_5_vl' and inputs['input_ids'].shape[1] > frame_num*130:
-            continue
-        output_ar = AR_generate_two_stage(inputs, model ,max_new_tokens=max_new_tokens, video_token_id=video_token_id)
+
+        output_ar = AR_generate(inputs, model ,max_new_tokens=max_new_tokens, video_token_id=video_token_id)
         
         print("\n")
         print("-------Autoregressive Decoding-------")
@@ -51,7 +47,7 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
 
         # SD tree two stage  
         inputs = clip_input_video(processor, task, data_instance,frame_num = frame_num, model_type = model_type, data_path=data_path)
-        output_sd = SD_generate_two_stage(
+        output_sd = SD_generate(
                 inputs,
                 model,
                 draft_model,
@@ -79,7 +75,7 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
                 model,
                 draft_model,
                 processor,
-                method = 'attention_plus_uniform',
+                method = 'specvlm',
                 drop_rate = drop_rate,
                 video_token_id = video_token_id,
                 max_new_tokens=max_new_tokens,

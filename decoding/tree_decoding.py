@@ -250,41 +250,8 @@ def tree_draft(input_ids, draft_model, draft_past_key_values,len_posi):
 
 
 
-def initialize_tree(inputs, model, draft_model, past_key_values, draft_past_key_values):
 
-    torch.cuda.synchronize()
-    tic = time.time()
-    #Prefill of Target Model
-    output = model(
-        **inputs, past_key_values=past_key_values
-    )
-    logits = output.logits
-    sample_token = torch.argmax(logits[:, -1])
-    sample_token = sample_token[None, None]
-    torch.cuda.synchronize()
-    toc = time.time()
-    print("Target Prefill:",toc-tic)
-
-    torch.cuda.synchronize()
-    tic = time.time()
-    #Prefill of Draft Model
-    output_draft = draft_model(
-        **inputs, past_key_values=draft_past_key_values
-    )
-    torch.cuda.synchronize()
-    toc = time.time()
-    print("Draft Prefill:",toc-tic)
-
-    # input_ids = sample_token.to(inputs['input_ids'].device)
-    # len_posi = inputs['input_ids'].shape[1] + 1
-    # tree_logits = tree_draft(input_ids, draft_model, draft_past_key_values, len_posi)
-    # model.language_model.model.tree_mask = tree_attn_mask
-    # return tree_logits, logits, sample_token
-    return sample_token
-
-
-
-def initialize_tree_two_stage(inputs, model, draft_model, past_key_values, draft_past_key_values,
+def initialize_tree(inputs, model, draft_model, past_key_values, draft_past_key_values,
                               method=None, video_token_id=151647, drop_rate=None):
     #Find the last video_token
     last_video_idx = get_last_video_idx(inputs['input_ids'][0], video_token_id)
@@ -321,91 +288,9 @@ def initialize_tree_two_stage(inputs, model, draft_model, past_key_values, draft
 
 
 
-def initialize_tree_with_pruning(inputs, model, draft_model, past_key_values, draft_past_key_values, 
-                                 method, video_token_id, drop_rate):
-    #Prefill of Target Model
-    output = model(
-        **inputs, past_key_values=past_key_values,
-    )
-    next_token = torch.argmax(output.logits[:, -1:], dim=-1)
-    inputs['input_ids'] = torch.cat([inputs['input_ids'], next_token], dim=1)
-    input_ids = inputs['input_ids'].clone()
 
 
-    #First token with attention output
-    output = model(
-        next_token, past_key_values=past_key_values, output_attentions=True,
-    )
-    attention_output = output.attentions
-    logits = output.logits
-    sample_token = torch.argmax(logits[:, -1])
-    sample_token = sample_token[None, None]
-
-    # Pruning draft model kv
-    if method == 'random':
-        inputs_drop = drop_visual_tokens_random(inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
-    elif method == 'attention':
-        inputs_drop = drop_visual_tokens_by_attention(attention_output, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
-    # elif method == 'random_chunk':
-    #     inputs_drop = drop_visual_tokens_random_chunk(inputs, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id)
-    # elif method == 'attention_chunk':
-    #     inputs_drop = drop_visual_tokens_by_attention_chunk(attention_output, inputs, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id)
-    else:
-        print("Method not supported")
-        # inputs_drop = inputs
-        # inputs_drop['attention_mask'] = None
-
-    draft_input_len = inputs_drop['input_ids'].shape[1]
-    # print("draft_input_len:",draft_input_len)
-
-    #Prefill of Draft Model
-    output_draft = draft_model(
-        **inputs_drop, past_key_values=draft_past_key_values
-    )
-    print("INFO: Target Model KV:",past_key_values[0][0].shape)
-    print("INFO: Draft Model KV:",draft_past_key_values[0][0].shape)
-    return sample_token, input_ids, draft_input_len
-
-
-
-
-def initialize_tree_one_stage_with_pruning(inputs, model, draft_model, past_key_values, draft_past_key_values, 
-                                 method, video_token_id, drop_rate):
-    #Prefill of Target Model
-    output = model(
-        **inputs, past_key_values=past_key_values, output_attentions=True,
-    )
-    input_ids = inputs['input_ids'].clone()
-
-    attention_output = output.attentions
-    logits = output.logits
-    sample_token = torch.argmax(logits[:, -1])
-    sample_token = sample_token[None, None]
-
-    # Pruning draft model kv
-    if method == 'full_attention':
-        inputs_drop = drop_visual_tokens_by_attention(attention_output, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
-
-    draft_input_len = inputs_drop['input_ids'].shape[1]
-    # print("draft_input_len:",draft_input_len)
-
-    #Prefill of Draft Model
-    output_draft = draft_model(
-        **inputs_drop, past_key_values=draft_past_key_values
-    )
-    print("INFO: Target Model KV:",past_key_values[0][0].shape)
-    print("INFO: Draft Model KV:",draft_past_key_values[0][0].shape)
-    return sample_token, input_ids, draft_input_len
-
-
-
-
-def initialize_tree_two_stage_with_pruning(inputs, model, draft_model, past_key_values, draft_past_key_values,
+def initialize_tree_with_pruning(inputs, model, draft_model, past_key_values, draft_past_key_values,
                               method=None, video_token_id=151647, drop_rate=None, idx=None, inputs_drop=None, threshold=None, percentage=None, similarity_threshold=0.95):
     #Find the last video_token
     last_video_idx = get_last_video_idx(inputs['input_ids'][0], video_token_id)
@@ -445,91 +330,33 @@ def initialize_tree_two_stage_with_pruning(inputs, model, draft_model, past_key_
 
     scores = None
     #pruning draft kv cache
-    if method == 'random_two_stage':
-        inputs_drop = drop_visual_tokens_random(inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
+
+    # if method == 'random_two_stage':
+    #     inputs_drop = drop_visual_tokens_random(inputs, drop_rate=drop_rate,
+    #                                 visual_token_id=video_token_id)
         
-    elif method == 'front':
-        inputs_drop = drop_visual_tokens_window(inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id,drop_mode='front')
-    elif method == 'middle':
-        inputs_drop = drop_visual_tokens_window(inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id,drop_mode='middle')
-    elif method == 'back':
-        inputs_drop = drop_visual_tokens_window(inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id,drop_mode='back')
+    # elif method == 'front':
+    #     inputs_drop = drop_visual_tokens_window(inputs, drop_rate=drop_rate,
+    #                                 visual_token_id=video_token_id,drop_mode='front')
+    # elif method == 'middle':
+    #     inputs_drop = drop_visual_tokens_window(inputs, drop_rate=drop_rate,
+    #                                 visual_token_id=video_token_id,drop_mode='middle')
+    # elif method == 'back':
+    #     inputs_drop = drop_visual_tokens_window(inputs, drop_rate=drop_rate,
+    #                                 visual_token_id=video_token_id,drop_mode='back')
         
-    elif method == 'uniform_two_stage':
-        inputs_drop = drop_visual_tokens_uniform(inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
-    elif method == 'attention_two_stage':
-        inputs_drop,scores = drop_visual_tokens_by_attention(attentions, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id, output_scores=True, idx=idx)
-    # elif method == 'attention_two_stage_my': #similarity
-    #     visual_idx = get_idx_from_attention(attentions, inputs, video_token_id)
-    #     idx = get_idx_from_similarity(video_emb,text_emb, visual_idx)
+    # elif method == 'uniform_two_stage':
+    #     inputs_drop = drop_visual_tokens_uniform(inputs, drop_rate=drop_rate,
+    #                                 visual_token_id=video_token_id)
+    # elif method == 'attention_two_stage':
     #     inputs_drop,scores = drop_visual_tokens_by_attention(attentions, inputs, drop_rate=drop_rate,
     #                                 visual_token_id=video_token_id, output_scores=True, idx=idx)
-    elif method == 'attention_two_stage_reverse':
-        inputs_drop = drop_visual_tokens_by_attention(attentions, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id, reverse=True, idx=idx)
-    elif method == 'attention_plus_uniform':
-        inputs_drop = drop_visual_tokens_attention_plus_uniform(attentions, inputs, drop_rate=drop_rate,
+    # elif method == 'attention_two_stage_reverse':
+    #     inputs_drop = drop_visual_tokens_by_attention(attentions, inputs, drop_rate=drop_rate,
+    #                                 visual_token_id=video_token_id, reverse=True, idx=idx)
+    if method == 'specvlm':
+        inputs_drop = drop_visual_tokens_specvlm(attentions, inputs, drop_rate=drop_rate,
                                     visual_token_id=video_token_id, idx=idx, threshold=threshold, percentage=percentage)
-    elif method == 'frame':
-        inputs_drop = inputs_drop
-    # elif method == 'frame_token':
-    #     inputs_drop = drop_visual_tokens_frame(inputs, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id)
-    # elif method == 'frame_plus_attention':
-    #     inputs_drop = drop_visual_tokens_frame_plus_attention(attentions, inputs, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id)
-    # elif method == 'frame_plus_uniform':
-    #     # inputs_drop = drop_visual_tokens_frame_plus_uniform(inputs, drop_rate=drop_rate,
-    #     #                             visual_token_id=video_token_id)
-    #     inputs_drop = drop_visual_tokens_uniform(inputs_drop, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id)
-    elif method == 'temporal':
-        inputs_drop = drop_visual_tokens_temporal(video_features, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
-    # elif method == 'temporal_attention':
-    #     inputs_drop = drop_visual_tokens_temporal_attention(attentions, video_features, inputs, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id)
-    elif method == 'frame_similarity':
-        inputs_drop = drop_visual_tokens_frame_similarity(video_features, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
-    # elif method == 'frame_attention':
-    #     inputs_drop = drop_visual_tokens_frame_attention(attentions, video_features, inputs, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id)
-    # elif method == 'ours':
-    #     inputs_drop = drop_visual_tokens_ours(video_features, attentions, inputs, drop_rate=drop_rate,
-    #                                 visual_token_id=video_token_id, threshold=threshold, window_size=window_size, similarity_threshold=similarity_threshold)
-    elif method == 'draft':
-
-        (
-                temp_past_key_values,
-                temp_past_key_values_data,
-                temp_current_length_data,
-        ) = initialize_past_key_values(draft_model.language_model)
-
-        inputs['input_ids'] = inputs['input_ids'][:, :last_video_idx+1]
-        inputs['attention_mask'] = inputs['attention_mask'][:, :last_video_idx+1]
-
-        #First stage of prefilling video tokens
-        output1 = draft_model(
-            **inputs, past_key_values=temp_past_key_values
-        )
-
-        #Second stage of prefilling text tokens
-        output2 = draft_model(
-            input_ids=text_input_ids, 
-            past_key_values=temp_past_key_values, 
-            output_attentions=True,
-        )
-        attentions = output2.attentions
-        inputs['input_ids'] = torch.cat([inputs['input_ids'], text_input_ids], dim=1)
-        inputs_drop = drop_visual_tokens_attention_plus_uniform(attentions, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id, idx=idx, threshold=threshold, window_size=window_size)
     else:
         print("Method not supported")
 
@@ -556,54 +383,6 @@ def initialize_tree_two_stage_with_pruning(inputs, model, draft_model, past_key_
 
     return sample_token, input_ids, draft_input_len, scores
 
-
-
-
-def initialize_tree_with_average_pruning(inputs, model, draft_model, past_key_values, draft_past_key_values, 
-                                 video_token_id, drop_rate, n=5):
-    #Prefill of Target Model
-    output = model(
-        **inputs, past_key_values=past_key_values,
-    )
-    sample_token = torch.argmax(output.logits[:, -1:], dim=-1)
-    inputs['input_ids'] = torch.cat([inputs['input_ids'], sample_token], dim=1)
-
-
-    #First n token with attention output
-    scores = []
-    for i in range(n):
-        output = model(
-            sample_token, past_key_values=past_key_values, output_attentions=True,
-        )
-        attention_output = output.attentions
-        score = convert_attention_to_score(attention_output, inputs['input_ids'], video_token_id)
-        scores.append(score)
-
-        logits = output.logits
-        sample_token = torch.argmax(logits[:, -1])
-        sample_token = sample_token[None, None]
-
-        if i == n-1:
-            break
-        inputs['input_ids'] = torch.cat([inputs['input_ids'], sample_token], dim=1)
-    input_ids = inputs['input_ids'].clone()
-    #average score
-    scores = np.mean(scores, axis=0).tolist()
-
-    # Pruning draft model kv
-    inputs_drop = drop_visual_tokens_by_scores(scores, inputs, drop_rate=drop_rate,
-                                    visual_token_id=video_token_id)
-
-    draft_input_len = inputs_drop['input_ids'].shape[1]
-    # print("draft_input_len:",draft_input_len)
-
-    #Prefill of Draft Model
-    output_draft = draft_model(
-        **inputs_drop, past_key_values=draft_past_key_values
-    )
-    print("INFO: Target Model KV:",past_key_values[0][0].shape)
-    print("INFO: Draft Model KV:",draft_past_key_values[0][0].shape)
-    return sample_token, input_ids, draft_input_len
 
 
 
@@ -822,144 +601,6 @@ def SD_generate(
         draft_model,
         processor,
         max_new_tokens=512,
-        # max_length=2048,
-        log=False,
-        tree_choices=mc_sim_7b_63,
-    ):
-        torch.cuda.synchronize()
-        infer_start = time.time()
-        # inputs = inputs.clone()
-        # draft_model.language_model.stable_kv = None
-
-        #Tree Structure
-        tree_buffers = generate_tree_buffers(
-                tree_choices, device=model.language_model.model.layers[-1].self_attn.q_proj.weight.device
-            )
-        tree_buffers["retrieve_indices_head"] = tree_buffers["retrieve_indices"].to(
-                model.language_model.lm_head.weight.device)
-        model.language_model.tree_buffers = tree_buffers
-        model.language_model.tree_choices = tree_choices
-
-        #Draft Tree Structure
-        draft_model.language_model.tree_buffer = generate_tree_buffers_draft(
-            tree_choices, device=draft_model.language_model.model.layers[-1].self_attn.q_proj.weight.device)
-
-        # Initialize the past key values
-        (
-                past_key_values,
-                past_key_values_data,
-                current_length_data,
-        ) = initialize_past_key_values(model.language_model)
-        model.language_model.past_key_values = past_key_values
-        model.language_model.past_key_values_data = past_key_values_data
-        model.language_model.current_length_data = current_length_data
-        
-        (
-                draft_past_key_values,
-                draft_past_key_values_data,
-                draft_current_length_data,
-        ) = initialize_past_key_values(draft_model.language_model)
-
-        input_ids = inputs['input_ids']
-        input_ids = input_ids.clone()
-        input_len = input_ids.shape[1]
-
-        #Init
-        reset_tree_mode(model)
-        reset_tree_mode(draft_model)
-
-        #Prefill
-        sample_token = initialize_tree(
-            inputs, model, draft_model, past_key_values, draft_past_key_values
-        )
-
-        torch.cuda.synchronize()
-        decode_start = time.time()
-        
-        #First Draft
-        first_id = sample_token.to(inputs['input_ids'].device)
-        len_posi = inputs['input_ids'].shape[1] + 1
-        tree_logits = tree_draft(first_id, draft_model, draft_past_key_values, len_posi)
-        model.language_model.model.tree_mask = tree_buffers["tree_attn_mask"]
-        #tree_logits:[11,10]
-
-
-        new_token = 0
-        accept_length_total = []
-        for step in range(max_new_tokens):
-            candidates, tree_candidates = generate_candidates(
-                tree_logits,
-                tree_buffers["tree_indices"],
-                tree_buffers["retrieve_indices"],
-                sample_token,
-                processor,
-            )
-
-            logits, outputs = tree_decoding(
-                model,
-                tree_candidates,
-                past_key_values,
-                tree_buffers["tree_position_ids"],
-                input_ids,
-                tree_buffers["retrieve_indices"],
-                )
-            
-            best_candidate, accept_length, sample_p = evaluate_posterior(
-                    logits, candidates
-                )
-            accept_length_total.append(accept_length)
-
-            input_ids, tree_logits, new_token, hidden_state, sample_token = update_inference_inputs(
-                input_ids,
-                candidates,
-                best_candidate,
-                accept_length,
-                tree_buffers["retrieve_indices"],
-                logits,
-                tree_logits,
-                new_token,
-                past_key_values_data,
-                current_length_data,
-                draft_model,
-                draft_past_key_values,
-                draft_past_key_values_data,
-                draft_current_length_data,
-                sample_p
-            )
-
-            # if processor.tokenizer.eos_token_id in input_ids[0, input_len:].tolist():
-            #     reset_tree_mode(model)
-            #     reset_tree_mode(draft_model)
-            #     torch.cuda.synchronize()
-            #     end = time.time()
-            #     return {
-            #         'output_ids': input_ids,
-            #         'inference_time': end - infer_start,
-            #         'decoding_time': end - decode_start,
-            #         'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
-            #     }
-            if new_token >= max_new_tokens:
-                reset_tree_mode(model)
-                reset_tree_mode(draft_model)
-                torch.cuda.synchronize()
-                end = time.time()
-                return {
-                    'output_ids': input_ids,
-                    'inference_time': end - infer_start,
-                    'decoding_time': end - decode_start,
-                    'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
-                }
-
-
-
-
-@torch.no_grad()
-def SD_generate_two_stage(
-        inputs,
-        model,
-        draft_model,
-        processor,
-        max_new_tokens=512,
         video_token_id=151647,
         log=False,
         tree_choices=mc_sim_7b_63,
@@ -1007,7 +648,7 @@ def SD_generate_two_stage(
         reset_tree_mode(draft_model)
 
         #Prefill
-        sample_token = initialize_tree_two_stage(
+        sample_token = initialize_tree(
             inputs, model, draft_model, past_key_values, draft_past_key_values,
             video_token_id=video_token_id
         )
@@ -1077,6 +718,8 @@ def SD_generate_two_stage(
             #         'decoding_time': end - decode_start,
             #         'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
             #     }
+
+            # Currently, we mannually set the generation length for fair comparison.
             if new_token >= max_new_tokens:
                 reset_tree_mode(model)
                 reset_tree_mode(draft_model)
@@ -1147,35 +790,16 @@ def SD_generate_with_pruning(
         reset_tree_mode(draft_model)
 
         scores = None
-        #Prefill
-        # if method == 'random_two_stage' or method == 'uniform_two_stage' or method == 'attention_two_stage' or method == 'attention_two_stage_reverse' or method == 'attention_two_stage_my':
-        # if method == 'full_attention':
-        #     sample_token, input_ids, draft_input_len = initialize_tree_one_stage_with_pruning(
-        #         inputs, model, draft_model, past_key_values, draft_past_key_values,
-        #         method, video_token_id, drop_rate,
-        #     )
-        # else:
-        sample_token, input_ids, draft_input_len, scores = initialize_tree_two_stage_with_pruning(
+        sample_token, input_ids, draft_input_len, scores = initialize_tree_with_pruning(
             inputs, model, draft_model, past_key_values, draft_past_key_values,
             method, video_token_id, drop_rate, idx=idx, inputs_drop=inputs_drop,
             threshold=threshold, percentage=percentage,similarity_threshold=similarity_threshold,
         )
-        # elif method != 'average':
-        #     sample_token, input_ids, draft_input_len = initialize_tree_with_pruning(
-        #         inputs, model, draft_model, past_key_values, draft_past_key_values,
-        #         method, video_token_id, drop_rate
-        #     )
-        # else:
-        #     sample_token, input_ids, draft_input_len = initialize_tree_with_average_pruning(
-        #         inputs, model, draft_model, past_key_values, draft_past_key_values,
-        #         video_token_id, drop_rate
-        #     )
 
 
         input_ids = input_ids.clone()
         input_len = input_ids.shape[1]
         # print("New Input length:",input_len)
-
 
         torch.cuda.synchronize()
         decode_start = time.time()
@@ -1243,6 +867,8 @@ def SD_generate_with_pruning(
             #         'decoding_time': end - decode_start,
             #         'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
             #     }
+
+            # Currently, we mannually set the generation length for fair comparison.
             if new_token >= max_new_tokens:
                 reset_tree_mode(model)
                 reset_tree_mode(draft_model)
@@ -1257,93 +883,9 @@ def SD_generate_with_pruning(
                 }
             
 
-@torch.no_grad()
-def AR_generate_nokv(inputs, model, max_new_tokens=100):
-    torch.cuda.synchronize()
-    tic1 = time.time()
-    
-    with torch.no_grad():
-        #Prefill the cache with the first token
-        outputs = model(**inputs, use_cache=True)
-        next_token = torch.argmax(outputs.logits[:, -1:], dim=-1)
-        past_key_values = outputs.past_key_values
-        
-        generated = torch.cat([inputs['input_ids'], next_token], dim=1)
-        torch.cuda.synchronize()
-        tic2 = time.time()
-        
-        for step in range(max_new_tokens - 1):
-            new_inputs = {
-                'input_ids': next_token,
-                'past_key_values': past_key_values,
-                'use_cache':True,
-            }
-            outputs = model(**new_inputs)
-            past_key_values = outputs.past_key_values
-            
-            next_token = torch.argmax(outputs.logits[:, -1:], dim=-1)
-            generated = torch.cat([generated, next_token], dim=-1)
-        torch.cuda.synchronize()
-        toc = time.time()
-        
-        return {
-        'output_ids':generated,
-        'inference_time':toc - tic1,
-        'decoding_time':toc - tic2,
-    }
-
-
-
 
 @torch.no_grad()
-def AR_generate(inputs, model, max_new_tokens=100):
-    torch.cuda.synchronize()
-    tic1 = time.time()
-
-    (
-        past_key_values,
-        past_key_values_data,
-        current_length_data,
-    ) = initialize_past_key_values(model.language_model)
-    model.language_model.past_key_values = past_key_values
-    model.language_model.past_key_values_data = past_key_values_data
-    model.language_model.current_length_data = current_length_data
-
-    model.language_model.model.tree_mask = None 
-    
-    with torch.no_grad():
-        #Prefill the cache with the first token
-        outputs = model(**inputs, past_key_values=past_key_values)
-        next_token = torch.argmax(outputs.logits[:, -1:], dim=-1)
-        # print("KV shape:", past_key_values[0][0].shape)
-        
-        generated = torch.cat([inputs['input_ids'], next_token], dim=1)
-        torch.cuda.synchronize()
-        tic2 = time.time()
-        
-        for step in range(max_new_tokens - 1):
-            new_inputs = {
-                'input_ids': next_token,
-                'past_key_values': past_key_values,
-            }
-            outputs = model(**new_inputs)
-            
-            next_token = torch.argmax(outputs.logits[:, -1:], dim=-1)
-            generated = torch.cat([generated, next_token], dim=-1)
-
-        torch.cuda.synchronize()
-        toc = time.time()
-        
-        return {
-        'output_ids':generated,
-        'inference_time':toc - tic1,
-        'decoding_time':toc - tic2,
-    }
-
-
-
-@torch.no_grad()
-def AR_generate_two_stage(inputs, model, max_new_tokens=100,video_token_id=151647):
+def AR_generate(inputs, model, max_new_tokens=100,video_token_id=151647):
     torch.cuda.synchronize()
     tic1 = time.time()
 

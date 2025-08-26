@@ -1,5 +1,6 @@
 transformers==4.48.0
 datasets
 accelerate
-torch
 numpy
+qwen-vl-utils
+av

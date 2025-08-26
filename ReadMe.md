@@ -1,23 +1,18 @@
 # SPECVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning
 
-## 👨‍💻 Authors
 Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen,  
-Lidan Shou, Gang Chen, Huan Li  
-(* equal contribution)
+Lidan Shou, Gang Chen, Huan Li (* equal contribution)
 
----
 
-## 🖼️ Overview
+## Overview
 <p align="center">
-  <img src="assets/overview.pdf" alt="SPECVLM Framework" width="600"/>
+  <img src="assets/overview.png" alt="SPECVLM Framework" width="600"/>
 </p>
 
----
 
-## 📄 Publication
+## Publication
 📌 [EMNLP 2025 Main Conference](https://www.arxiv.org/abs/2508.16201)
 
----
 
 ## 📖 Abstract
 Video large language models (Vid-LLMs) have shown strong capabilities in understanding video content. However, their reliance on dense video token representations introduces substantial memory and computational overhead in both prefilling and decoding. To mitigate the information loss of recent video token reduction methods and accelerate the decoding stage of Vid-LLMs losslessly, we introduce SPECVLM, a training-free speculative decoding (SD) framework tailored for Vid-LLMs that incorporates staged video token pruning. Building on our novel finding that the draft model’s speculation exhibits low sensitivity to video token pruning, SPECVLM prunes up to 90% of video tokens to enable efficient speculation without sacrificing accuracy. To achieve this, we perform a two-stage pruning process: Stage I selects highly informative tokens guided by attention signals from the verifier (target model), while Stage II prunes the remaining redundant ones in a spatially uniform manner. Extensive experiments on four video understanding benchmarks demonstrate the effectiveness and robustness of SPECVLM, which achieves up to 2.68× decoding speedup for LLaVA-OneVision-72B and 2.11× speedup for Qwen2.5-VL-32B.  
@@ -35,7 +30,7 @@ pip install -r requirements.txt
 ```
 
 
-## 📥 Download Models & Datasets
+## Download Models & Datasets
 - For LLaVA-OneVision models: https://huggingface.co/llava-hf
 - For Qwen2.5-VL models: https://huggingface.co/Qwen 
 - For VideoDetailCaption dataset: https://huggingface.co/datasets/lmms-lab/VideoDetailCaption
@@ -45,4 +40,22 @@ pip install -r requirements.txt
 Run the demo script to quickly evaluate SPECVLM:
 ```bash
 sh run.sh
+```
+Please also moderate the model path, data path, pruning ratio, and frame number in run.sh file.
+After runing the script, the evaluation result will be stored in results/.
+
+## Note
+
+## Citation
+If you find CausVid useful or relevant to your research, please kindly cite our papers:
+```bash
+@misc{ji2025specvlmenhancingspeculativedecoding,
+      title={SpecVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning}, 
+      author={Yicheng Ji and Jun Zhang and Heming Xia and Jinpeng Chen and Lidan Shou and Gang Chen and Huan Li},
+      year={2025},
+      eprint={2508.16201},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2508.16201}, 
+}
 ```

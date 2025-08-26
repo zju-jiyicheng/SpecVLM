@@ -5,7 +5,7 @@ Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan L
 
 ## Overview
 <p align="center">
-  <img src="assets/overview.png" alt="SPECVLM Framework" width="600"/>
+  <img src="assets/overview.png" alt="SPECVLM Framework" width="100%"/>
 </p>
 
 
@@ -41,6 +41,7 @@ Run the demo script to quickly evaluate SPECVLM:
 sh run.sh
 ```
 Please also moderate the model path, data path, pruning ratio, and frame number in run.sh file.
+
 After runing the script, the evaluation result will be stored in results/.
 
 ## Note
@@ -48,7 +49,7 @@ After runing the script, the evaluation result will be stored in results/.
 - In principle, our approach is lossless, with only minimal impact introduced by the attention implementation and data type settings.
 
 ## Citation
-If you find CausVid useful or relevant to your research, please kindly cite our papers:
+If you find SpecVLM useful or relevant to your research, please kindly cite our papers:
 ```bash
 @misc{ji2025specvlmenhancingspeculativedecoding,
       title={SpecVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning}, 

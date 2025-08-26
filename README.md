@@ -1,4 +1,4 @@
-# SPECVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning
+# SpecVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning
 
 Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan Li (* equal contribution)
 

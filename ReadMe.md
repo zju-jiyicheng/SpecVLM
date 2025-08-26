@@ -1,7 +1,6 @@
 # SPECVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning
 
-Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen,  
-Lidan Shou, Gang Chen, Huan Li (* equal contribution)
+Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan Li (* equal contribution)
 
 
 ## Overview
@@ -45,6 +44,8 @@ Please also moderate the model path, data path, pruning ratio, and frame number 
 After runing the script, the evaluation result will be stored in results/.
 
 ## Note
+- Our method primarily targets resource-constrained long-video scenarios, where GPU memory bandwidth constitutes the main bottleneck during inference. Users are advised to set the input length according to GPU capacity. 
+- In principle, our approach is lossless, with only minimal impact introduced by the attention implementation and data type settings.
 
 ## Citation
 If you find CausVid useful or relevant to your research, please kindly cite our papers:

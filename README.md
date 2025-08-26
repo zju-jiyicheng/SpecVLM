@@ -5,6 +5,20 @@
     <em>SpecVLM</em>  
     <br>  
 </h1>
+
+<p align="center">
+<a href="https://openreview.net/forum?id=mWElG6fKEN">
+  <img src="https://img.shields.io/badge/EMNLP-2025-red.svg"></a> 
+<a href="https://opensource.org/licenses/Apache-2.0">
+  <img src="https://img.shields.io/badge/License-Apache_2.0-green.svg"></a> 
+<a href="https://github.com/zju-jiyicheng/SpecVLM/pulls">
+    <img src="https://img.shields.io/badge/Contributions-welcome-blue.svg?style=flat"></a>
+</p>
+
+<h2 style="color: #6a5acd; font-weight: bold;">
+🚀 2.68× Decoding Speedup with 90% Token Reduction ⬇️
+</h2>
+
 </div>
 
 Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan Li (* equal contribution)

@@ -10,7 +10,7 @@ Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan L
 
 
 ## About
-[EMNLP 2025 Main Conference] SPECVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning
+[EMNLP 2025 Main] SPECVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning
 
 🔗 [arXiv 2508.16201](https://www.arxiv.org/abs/2508.16201)
 

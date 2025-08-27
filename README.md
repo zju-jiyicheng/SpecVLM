@@ -26,7 +26,7 @@ Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan L
 
 ## 📌  Overview
 <p align="center">
-  <img src="assets/overview.png" alt="SPECVLM Framework" width="100%"/>
+  <img src="assets/overview.png" alt="SpecVLM Framework" width="100%"/>
 </p>
 
 
@@ -37,7 +37,7 @@ Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan L
 
 
 ## 📖 Abstract
-Video large language models (Vid-LLMs) have shown strong capabilities in understanding video content. However, their reliance on dense video token representations introduces substantial memory and computational overhead in both prefilling and decoding. To mitigate the information loss of recent video token reduction methods and accelerate the decoding stage of Vid-LLMs losslessly, we introduce SpecVLM, a training-free speculative decoding (SD) framework tailored for Vid-LLMs that incorporates staged video token pruning. Building on our novel finding that the draft model’s speculation exhibits low sensitivity to video token pruning, SPECVLM prunes up to 90% of video tokens to enable efficient speculation without sacrificing accuracy. To achieve this, we perform a two-stage pruning process: Stage I selects highly informative tokens guided by attention signals from the verifier (target model), while Stage II prunes the remaining redundant ones in a spatially uniform manner. Extensive experiments on four video understanding benchmarks demonstrate the effectiveness and robustness of SPECVLM, which achieves up to 2.68× decoding speedup for LLaVA-OneVision-72B and 2.11× speedup for Qwen2.5-VL-32B.  
+Video large language models (Vid-LLMs) have shown strong capabilities in understanding video content. However, their reliance on dense video token representations introduces substantial memory and computational overhead in both prefilling and decoding. To mitigate the information loss of recent video token reduction methods and accelerate the decoding stage of Vid-LLMs losslessly, we introduce SpecVLM, a training-free speculative decoding (SD) framework tailored for Vid-LLMs that incorporates staged video token pruning. Building on our novel finding that the draft model’s speculation exhibits low sensitivity to video token pruning, SpecVLM prunes up to 90% of video tokens to enable efficient speculation without sacrificing accuracy. To achieve this, we perform a two-stage pruning process: Stage I selects highly informative tokens guided by attention signals from the verifier (target model), while Stage II prunes the remaining redundant ones in a spatially uniform manner. Extensive experiments on four video understanding benchmarks demonstrate the effectiveness and robustness of SpecVLM, which achieves up to 2.68× decoding speedup for LLaVA-OneVision-72B and 2.11× speedup for Qwen2.5-VL-32B.  
 
 ---
 
@@ -45,8 +45,8 @@ Video large language models (Vid-LLMs) have shown strong capabilities in underst
 
 Install the required dependencies:
 ```bash
-conda create -n specvlm python==3.10 -y
-conda activate specvlm
+conda create -n SpecVLM python==3.10 -y
+conda activate SpecVLM
 pip install torch torchvision
 pip install -r requirements.txt
 ```
@@ -74,7 +74,7 @@ After runing the script, the evaluation result will be stored in results/.
 ## Citation
 If you find SpecVLM useful or relevant to your research, please kindly cite our papers:
 ```bash
-@inproceedings{ji2025specvlm,
+@inproceedings{ji2025SpecVLM,
   title     = {SpecVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning},
   author    = {Yicheng Ji and Jun Zhang and Heming Xia and Jinpeng Chen and Lidan Shou and Gang Chen and Huan Li},
   booktitle = {The 2025 Conference on Empirical Methods in Natural Language Processing},

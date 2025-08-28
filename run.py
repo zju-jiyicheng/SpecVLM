@@ -80,7 +80,7 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
                 video_token_id = video_token_id,
                 max_new_tokens=max_new_tokens,
                 tree_choices=mc_sim_7b_63,
-                percentage=0.5,
+                percentage=0.4,
         )
         print("\n")
         print("-------SpecVLM-------")

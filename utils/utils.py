@@ -347,10 +347,6 @@ def drop_visual_tokens_specvlm(attentions, inputs, drop_rate=0.5, visual_token_i
             attention_tokens = int(n_image_tokens * threshold)
             uniform_tokens = tokens_to_keep - attention_tokens
     elif percentage != None:
-        if drop_rate > 0.75:
-            percentage = 0.4
-        else:
-            percentage = 0.5
         attention_tokens = get_attention_token_from_percentage(scores, percentage)
         if attention_tokens > tokens_to_keep:
             uniform_tokens = 0

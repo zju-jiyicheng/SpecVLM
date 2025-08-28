@@ -66,7 +66,7 @@ Please also moderate the model path, data path, pruning ratio, and frame number 
 After runing the script, the evaluation result will be stored in results/.
 
 ## Note
-- Our method primarily targets resource-constrained long-video scenarios, where GPU memory bandwidth constitutes the main bottleneck during inference. Users are advised to set the input length according to GPU capacity. 
+- Our method primarily targets resource-constrained long-video scenarios, where GPU memory bandwidth constitutes the main bottleneck during inference. Users are advised to set the input length according to GPU capacity. Theoretically, as frame number grows, SpecVLM achieves higher acceleration ratios.
 - In principle, our approach is lossless, with only minimal impact introduced by the attention implementation and data type settings.
 
 ## Citation

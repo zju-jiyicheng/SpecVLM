@@ -69,7 +69,7 @@ def load_data(task, data_num, data_path):
             video_path = os.path.join(video_dir, f"{example['video_name']}.mp4")
             return os.path.exists(video_path)
 
-        video_dir = os.path.join(data_path, "Test_Videos")
+        video_dir = os.path.join(data_path, "Test_Videos/")
         filtered_data = data_video.filter(video_exists)
         data_video = filtered_data
     elif task == 'MVBench':

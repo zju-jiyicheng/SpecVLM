@@ -14,7 +14,7 @@ DATA_NUM=100                      # Number of data samples to load
 DROP_RATE=0.9                     # Pruning ratio
 GPU_IDS="1,2,3"                   # GPU IDs to use
 
-# A larger number of frames is generally recommended, as permitted by your GPU memory capacity and bandwidth. Memory bottlenecks are typically triggered by long visual sequence. 
+# A larger number of frames is generally recommended, as permitted by the model capacity, your GPU memory capacity and bandwidth. Memory bottlenecks are typically triggered by long visual sequence. 
 # Example: 
 #   - On NVIDIA A100 GPUs, we recommend using 128 frames for the LLaVA-OV 7B target model and 64 frames for the 72B model. 
 # Qwen2.5-VL currently does not support specifying input length directly. To control the input length, you will need to adjust the frame number accordingly.

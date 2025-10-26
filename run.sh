@@ -16,10 +16,9 @@ GPU_IDS="1,2,3"                   # GPU IDs to use
 
 # A larger number of frames is generally recommended, as permitted by your GPU memory capacity and bandwidth. Memory bottlenecks are typically triggered by long visual sequence. 
 # Example: 
-#   - On NVIDIA A100 GPUs, we recommend using 128 frames for the LLaVA-OV 7B target 
-#     model and 64 frames for the 72B model. 
-#   - On NVIDIA H200 GPUs, we recommend 256 and 192 frames for the 7B and 72B models, respectively. 
+#   - On NVIDIA A100 GPUs, we recommend using 128 frames for the LLaVA-OV 7B target model and 64 frames for the 72B model. 
 # Qwen2.5-VL currently does not support specifying input length directly. To control the input length, you will need to adjust the frame number accordingly.
+# In some cases, current model doesn't support large frames as input. We are working on the implementation of SpecVLM for LLaVA-Video.
 FRAME_NUM=160                     
 
 # Run evaluation

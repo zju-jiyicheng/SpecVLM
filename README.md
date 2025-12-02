@@ -72,11 +72,11 @@ After runing the script, the evaluation result will be stored in results/.
 ## Citation
 If you find SpecVLM useful or relevant to your research, please kindly cite our papers:
 ```bash
-@inproceedings{ji2025SpecVLM,
-  title     = {SpecVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning},
-  author    = {Yicheng Ji and Jun Zhang and Heming Xia and Jinpeng Chen and Lidan Shou and Gang Chen and Huan Li},
-  booktitle = {The 2025 Conference on Empirical Methods in Natural Language Processing},
-  year      = {2025},
-  url       = {https://openreview.net/forum?id=mWElG6fKEN}
+@inproceedings{ji2025specvlm,
+  title={Specvlm: Enhancing speculative decoding of video llms via verifier-guided token pruning},
+  author={Ji, Yicheng and Zhang, Jun and Xia, Heming and Chen, Jinpeng and Shou, Lidan and Chen, Gang and Li, Huan},
+  booktitle={Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing},
+  pages={7216--7230},
+  year={2025}
 }
 ```

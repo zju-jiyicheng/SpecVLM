@@ -69,7 +69,7 @@ After runing the script, the evaluation result will be stored in results/.
 
 ## Note
 - Our method primarily targets resource-constrained long-video scenarios, where GPU memory bandwidth constitutes the main bottleneck during inference. Users are advised to set the input length according to GPU capacity. Theoretically, as frame number grows, SpecVLM achieves higher acceleration ratios.
-- In principle, our approach is lossless, with only minimal impact introduced by the attention implementation and data type settings.
+- In principle, our approach is lossless, with only minimal impact introduced by the attention implementation and data type settings. Given the insensitivity of draft models to token pruning, we also recommend uniform pruning as a compatibility-friendly alternative.
 
 ## Citation
 If you find SpecVLM useful or relevant to your research, please kindly cite our papers:

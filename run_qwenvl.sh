@@ -2,7 +2,7 @@ export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
 
 # Define parameters with comments
 MODEL_TYPE="qwen2_5_vl"             # Model type: llava_ov or qwen2_5_vl
-BASE_MODEL_PATH="/ycji/models/Qwen2.5-VL-7B-Instruct"  # Path to base model
+BASE_MODEL_PATH="/ycji/models/Qwen2.5-VL-32B-Instruct"  # Path to base model
 DRAFT_MODEL_PATH="/ycji/models/Qwen2.5-VL-7B-Instruct"  # Path to draft model
 
 TASK="VideoDetailCaption"         # Task type: VideoDetailCaption, MVBench, MVLU, LongVideoBench, MMBench
@@ -15,7 +15,7 @@ DROP_RATE=0.9                     # Pruning ratio
 GPU_IDS="0,1"                   # GPU IDs to use
 
 # Qwen2.5-VL currently does not support specifying input length directly. To control the input length, we adjust the fps accordingly.
-FRAME_NUM=64                     
+FRAME_NUM=128                     
 
 # Run evaluation
 CUDA_VISIBLE_DEVICES=$GPU_IDS python inference.py \

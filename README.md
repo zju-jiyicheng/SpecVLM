@@ -78,7 +78,7 @@ After runing the script, the output result and efficiency metric will be stored 
 - In principle, our approach is lossless, with only minimal impact introduced parallel decoding settings. Given the insensitivity of draft models to token pruning, we also recommend uniform pruning as a compatibility-friendly alternative.
 
 ## Citation
-If you find SpecVLM useful or relevant to your research, please kindly cite our papers:
+If you find our work useful or relevant to your research, please kindly cite our papers:
 ```bibtex
 @inproceedings{ji2025specvlm,
   title={Specvlm: Enhancing speculative decoding of video llms via verifier-guided token pruning},

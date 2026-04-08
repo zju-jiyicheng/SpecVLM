@@ -71,9 +71,9 @@ sh run_qwenvl.sh
 # LLaVA-OneVision
 sh run_llava.sh
 ```
-Please also moderate the model path, data path, pruning ratio, and frame number in the .sh file.
+Please also modify the model path, data path, pruning ratio, and frame number in the .sh file.
 
-After runing the script, the output result and efficiency metric will be stored in the save_path.
+After running the script, the output result and efficiency metric will be stored in the save_path.
 
 ## Note
 - Our method primarily targets resource-constrained long-video scenarios, where GPU memory bandwidth constitutes the main bottleneck during inference. Users are advised to set the input length according to GPU capacity. Theoretically, as frame number grows, SpecVLM achieves higher acceleration ratios.

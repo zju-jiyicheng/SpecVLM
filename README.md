@@ -51,7 +51,7 @@ Video large language models (Vid-LLMs) have shown strong capabilities in underst
 Install the required dependencies:
 ```bash
 conda create -n specvlm python==3.10 -y
-conda activate SpecVLM
+conda activate specvlm
 pip install torch torchvision
 pip install -r requirements.txt
 ```
@@ -66,7 +66,9 @@ pip install -r requirements.txt
 ## 🚀 Quick Evaluation
 Run the demo script to quickly evaluate SpecVLM:
 ```bash
+# Qwen2.5-VL
 sh run_qwenvl.sh
+# LLaVA-OneVision
 sh run_llava.sh
 ```
 Please also moderate the model path, data path, pruning ratio, and frame number in the .sh file.

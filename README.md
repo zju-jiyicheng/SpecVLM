@@ -107,4 +107,15 @@ If you find our work useful or relevant to your research, please kindly cite our
   year={2026},
   url={https://arxiv.org/abs/2603.19610}
 }
+
+@misc{zhang2026efficientinferencelargevisionlanguage,
+      title={Efficient Inference for Large Vision-Language Models: Bottlenecks, Techniques, and Prospects}, 
+      author={Jun Zhang and Yicheng Ji and Feiyang Ren and Yihang Li and Bowen Zeng and Zonghao Chen and Ke Chen and Lidan Shou and Gang Chen and Huan Li},
+      year={2026},
+      eprint={2604.05546},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2604.05546}, 
+}
+
 ```

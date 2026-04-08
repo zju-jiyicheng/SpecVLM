@@ -60,16 +60,16 @@ def load_model(model_type, base_model_path, draft_model_path):
 def load_data(task, data_num, data_path):
     if task == "VideoDetailCaption":
         data_video = load_dataset(
-                "/data/ycji/datasets/VideoDetailCaption",
+                "/ycji/datasets/VideoDetailCaption",
                 split="test",
                 # cache_dir=cache_dir,
             ).shuffle(seed=42).select(range(data_num))
-        
+
+        video_dir = os.path.join(data_path, "Test_Videos/")
         def video_exists(example):
             video_path = os.path.join(video_dir, f"{example['video_name']}.mp4")
             return os.path.exists(video_path)
 
-        video_dir = os.path.join(data_path, "Test_Videos/")
         filtered_data = data_video.filter(video_exists)
         data_video = filtered_data
     elif task == 'MVBench':

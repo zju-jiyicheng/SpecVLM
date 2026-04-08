@@ -8,6 +8,64 @@ from utils.utils import *
 # from visualize import *
 
 
+def _to_python_scalar(value):
+    if torch.is_tensor(value):
+        if value.numel() == 1:
+            return value.item()
+        return value.flatten()[0].item()
+    if hasattr(value, "item") and not isinstance(value, (str, bytes)):
+        try:
+            return value.item()
+        except (ValueError, TypeError):
+            pass
+    return value
+
+def _normalize_generate_len(value):
+    value = _to_python_scalar(value)
+    return int(round(float(value)))
+
+
+def _normalize_float(value):
+    value = _to_python_scalar(value)
+    return round(float(value), 2)
+
+
+def _build_record(sample_index, method, output_dict, output_text, include_accept_length=False):
+    record = {
+        "sample_index": sample_index,
+        "method": method,
+        "decoding_time": _normalize_float(output_dict["decoding_time"]),
+        "generate_len": _normalize_generate_len(output_dict["generate_len"]),
+    }
+    if include_accept_length:
+        record["average_accept_length"] = _normalize_float(output_dict["mean_accept_length"])
+    record["output"] = output_text
+    return record
+
+
+def _print_record(record):
+    print(json.dumps(record, ensure_ascii=False, indent=2))
+
+
+def _build_metric_record(method, decoding_times, generate_lens, accept_lengths=None):
+    mean_decoding_time = sum(decoding_times) / len(decoding_times)
+    mean_generate_len = sum(generate_lens) / len(generate_lens)
+    avg_decoding_time = round(mean_decoding_time, 2)
+    avg_generate_len = int(round(mean_generate_len))
+
+    metric_record = {
+        "method": method,
+        "avg_generate_len": avg_generate_len,
+        "avg_decoding_time": avg_decoding_time,
+        "avg_tokens_per_second": round(mean_generate_len / mean_decoding_time, 2) if mean_decoding_time else None,
+    }
+
+    if accept_lengths:
+        metric_record["avg_accept_length"] = round(sum(accept_lengths) / len(accept_lengths), 2)
+
+    return metric_record
+
+
 
 
 def run_eval(model_type, model, draft_model, data_video, task, frame_num, evaluation_num, max_new_tokens, drop_rate, video_token_id, save_path=None, data_path=None, processor=None):
@@ -15,15 +73,23 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
     model.eval()
     draft_model.eval()
 
-    results = {}
-
-    results['ar_two_stage_decode'] = []
-
-    results['sd_tree_two_stage_decode'] = []
-    results['sd_tree_two_stage_accept_length'] = []
-
-    results['specvlm_decode'] = []
-    results['specvlm_accept_length'] = []
+    results = {
+        "ar": {
+            "decoding_times": [],
+            "generate_lens": [],
+        },
+        "naive_sd": {
+            "decoding_times": [],
+            "generate_lens": [],
+            "accept_lengths": [],
+        },
+        "specvlm": {
+            "decoding_times": [],
+            "generate_lens": [],
+            "accept_lengths": [],
+        },
+    }
+    sample_records = []
 
     for i in tqdm(range(evaluation_num)):
         data_instance = data_video[i]
@@ -33,17 +99,14 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
         if inputs == None:
             continue
 
-        output_ar = AR_generate(inputs, model ,max_new_tokens=max_new_tokens, video_token_id=video_token_id)
-        
-        print("\n")
-        print("-------Autoregressive Decoding-------")
-        # print("Inference Time:", output_ar['inference_time'])
-        print("Decoding Time:", output_ar['decoding_time'])
+        output_ar = AR_generate(inputs, model ,max_new_tokens=max_new_tokens, video_token_id=video_token_id, processor=processor)
         output_text = processor.batch_decode(output_ar['output_ids'], skip_special_tokens=True)[0]
-        print("Output:")
-        print(output_text)
-        print("\n")
-        results['ar_two_stage_decode'].append(output_ar['decoding_time'])
+        ar_record = _build_record(i, "ar", output_ar, output_text)
+        print("\n-------Autoregressive-------")
+        _print_record(ar_record)
+        results["ar"]["decoding_times"].append(float(_to_python_scalar(output_ar["decoding_time"])))
+        results["ar"]["generate_lens"].append(_normalize_generate_len(output_ar["generate_len"]))
+        sample_records.append(ar_record)
 
         # SD tree two stage  
         inputs = clip_input_video(processor, task, data_instance,frame_num = frame_num, model_type = model_type, data_path=data_path)
@@ -56,17 +119,14 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
                 video_token_id=video_token_id,
                 tree_choices=mc_sim_7b_63,
         )
-        print("\n")
-        print("-------Naive Speculative Decoding (with tree attn)-------")
-        # print("Inference Time:", output_sd['inference_time'])
-        print("Decoding Time:", output_sd['decoding_time'])
-        print("Average Accept Length:", output_sd["mean_accept_length"].item())
         output_text = processor.batch_decode(output_sd['output_ids'], skip_special_tokens=True)[0]
-        print("Output:")
-        print(output_text)
-        print("\n")
-        results['sd_tree_two_stage_decode'].append(output_sd['decoding_time'])
-        results['sd_tree_two_stage_accept_length'].append(output_sd["mean_accept_length"])
+        sd_record = _build_record(i, "naive_sd", output_sd, output_text, include_accept_length=True)
+        print("\n-------Naive SD-------")
+        _print_record(sd_record)
+        results["naive_sd"]["decoding_times"].append(float(_to_python_scalar(output_sd["decoding_time"])))
+        results["naive_sd"]["generate_lens"].append(_normalize_generate_len(output_sd["generate_len"]))
+        results["naive_sd"]["accept_lengths"].append(float(_to_python_scalar(output_sd["mean_accept_length"])))
+        sample_records.append(sd_record)
 
         # SpecVLM
         inputs = clip_input_video(processor, task, data_instance,frame_num = frame_num, model_type = model_type, data_path=data_path)
@@ -82,59 +142,53 @@ def run_eval(model_type, model, draft_model, data_video, task, frame_num, evalua
                 tree_choices=mc_sim_7b_63,
                 percentage=0.4,
         )
-        print("\n")
-        print("-------SpecVLM-------")
-        # print("Inference Time:", output_specvlm['inference_time'])
-        print("Decoding Time:", output_specvlm['decoding_time'])
-        print("Average Accept Length:", output_specvlm["mean_accept_length"].item())
         output_text = processor.batch_decode(output_specvlm['output_ids'], skip_special_tokens=True)[0]
-        print("Output:")
-        print(output_text)
-        print("\n")
-        results['specvlm_decode'].append(output_specvlm['decoding_time'])
-        results['specvlm_accept_length'].append(output_specvlm["mean_accept_length"])
+        specvlm_record = _build_record(i, "specvlm", output_specvlm, output_text, include_accept_length=True)
+        print("\n-------SpecVLM-------")
+        _print_record(specvlm_record)
+        results["specvlm"]["decoding_times"].append(float(_to_python_scalar(output_specvlm["decoding_time"])))
+        results["specvlm"]["generate_lens"].append(_normalize_generate_len(output_specvlm["generate_len"]))
+        results["specvlm"]["accept_lengths"].append(float(_to_python_scalar(output_specvlm["mean_accept_length"])))
+        sample_records.append(specvlm_record)
 
     
     # Save results
     if save_path is not None:
-        
-        # Compute mean
-        print("\n")
-        print("-------Average Results-------")
+        os.makedirs(save_path, exist_ok=True)
 
-        # Two stage
-        print("Autoregressive Decoding Time:", sum(results['ar_two_stage_decode'])/len(results['ar_two_stage_decode']))
-        print("\n")
+        results_path = os.path.join(save_path, "results.jsonl")
+        with open(results_path, 'w', encoding='utf-8') as f:
+            for record in sample_records:
+                f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
-        print("Naive SD Decoding Time:", sum(results['sd_tree_two_stage_decode'])/len(results['sd_tree_two_stage_decode']))
-        print("Naive SD Average Accept Length:", (sum(results['sd_tree_two_stage_accept_length'])/len(results['sd_tree_two_stage_accept_length'])).item())
-        print("\n")
+        metric_records = [
+            _build_metric_record(
+                "ar",
+                results["ar"]["decoding_times"],
+                results["ar"]["generate_lens"],
+            ),
+            _build_metric_record(
+                "naive_sd",
+                results["naive_sd"]["decoding_times"],
+                results["naive_sd"]["generate_lens"],
+                results["naive_sd"]["accept_lengths"],
+            ),
+            _build_metric_record(
+                "specvlm",
+                results["specvlm"]["decoding_times"],
+                results["specvlm"]["generate_lens"],
+                results["specvlm"]["accept_lengths"],
+            ),
+        ]
 
-        print("SpecVLM:", sum(results['specvlm_decode'])/len(results['specvlm_decode']))
-        print("SpecVLM Average Accept Length:", (sum(results['specvlm_accept_length'])/len(results['specvlm_accept_length'])).item())
-        print("\n")
-        
-        print("-------End-------")
+        print("\n-------metrics-------")
+        for metric_record in metric_records:
+            _print_record(metric_record)
 
-        metrics = {
-        "Autoregressive Decoding Time": float(sum(results['ar_two_stage_decode'])/len(results['ar_two_stage_decode'])),
-    
-        "Naive SD": {
-            "Decoding Time": float(sum(results['sd_tree_two_stage_decode'])/len(results['sd_tree_two_stage_decode'])),
-            "Average Accept Length": float(sum(results['sd_tree_two_stage_accept_length'])/len(results['sd_tree_two_stage_accept_length']))
-        },
-        
-        "specvlm": {
-            "Decoding Time": float(sum(results['specvlm_decode'])/len(results['specvlm_decode'])),
-            "Average Accept Length": float(sum(results['specvlm_accept_length'])/len(results['specvlm_accept_length']))
-        }
-        }
-        
-        # Write to jsonl file
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        with open(save_path, 'w') as f:
-            json_str = json.dumps(metrics, indent=4)
-            f.write(json_str + '\n\n')
+        metrics_path = os.path.join(save_path, "metric.jsonl")
+        with open(metrics_path, 'w', encoding='utf-8') as f:
+            for metric_record in metric_records:
+                f.write(json.dumps(metric_record, ensure_ascii=False) + '\n')
 
 
 if __name__ == "__main__":
@@ -176,7 +230,7 @@ if __name__ == "__main__":
                         help='GPU IDs to use')
     parser.add_argument('--setting', type=str, default='standard',
                         choices=['self', 'standard'],
-                        help='Speculative Decoding setting')
+                        help='Speculative Decoding setting') #TODO: For 'self' setting, load draft model as base model to save memory cost.
 
     
     # Parse command line arguments
@@ -193,7 +247,6 @@ if __name__ == "__main__":
     
     # Load models
     model, draft_model, processor, video_token_id = load_model(args.model_type, args.base_model_path, args.draft_model_path)
-    #TODO: For 'self' setting, load draft model as base model
     
     # Load data
     data_video = load_data(args.task, args.data_num, args.data_path)

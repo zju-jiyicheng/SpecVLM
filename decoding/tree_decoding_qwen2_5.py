@@ -605,6 +605,7 @@ def SD_generate(
         input_ids = inputs['input_ids']
         input_ids = input_ids.clone()
         input_len = input_ids.shape[1]
+        original_input_len = input_len
 
         #Init
         reset_tree_mode(model)
@@ -670,19 +671,7 @@ def SD_generate(
                 sample_p
             )
 
-            # if processor.tokenizer.eos_token_id in input_ids[0, input_len:].tolist():
-            #     reset_tree_mode(model)
-            #     reset_tree_mode(draft_model)
-            #     torch.cuda.synchronize()
-            #     end = time.time()
-            #     return {
-            #         'output_ids': input_ids,
-            #         'inference_time': end - infer_start,
-            #         'decoding_time': end - decode_start,
-            #         'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
-            #     }
 
-            # Currently, we mannually set the generation length for fair comparison.
             if new_token >= max_new_tokens:
                 reset_tree_mode(model)
                 reset_tree_mode(draft_model)
@@ -693,7 +682,28 @@ def SD_generate(
                     'inference_time': end - infer_start,
                     'decoding_time': end - decode_start,
                     'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
+                    'generate_len': new_token,
                 }
+            if processor.tokenizer.eos_token_id in input_ids[0, original_input_len:].tolist():
+                reset_tree_mode(model)
+                reset_tree_mode(draft_model)
+                torch.cuda.synchronize()
+                end = time.time()
+
+                eos_token_id = processor.tokenizer.eos_token_id
+                eos_position = (input_ids[0, original_input_len:] == eos_token_id).nonzero(as_tuple=True)
+                eos_position = eos_position[0][0].item() + original_input_len
+                generate_len = eos_position - original_input_len
+                input_ids = input_ids[:, :eos_position]
+
+                return {
+                    'output_ids': input_ids,
+                    'inference_time': end - infer_start,
+                    'decoding_time': end - decode_start,
+                    'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
+                    'generate_len': generate_len,
+                }
+
 
 
 
@@ -753,6 +763,7 @@ def SD_generate_with_pruning(
         reset_tree_mode(draft_model)
 
         scores = None
+        # MODIFIED
         sample_token, input_ids, draft_input_len, scores = initialize_tree_with_pruning(
             inputs, model, draft_model, past_key_values, draft_past_key_values,
             method, video_token_id, drop_rate, idx=idx, inputs_drop=inputs_drop,
@@ -762,6 +773,11 @@ def SD_generate_with_pruning(
 
         input_ids = input_ids.clone()
         input_len = input_ids.shape[1]
+        original_input_len = input_len
+
+        #MODIFIED
+        visual_codebook = set()
+        visual_score_list = []
 
 
         torch.cuda.synchronize()
@@ -770,8 +786,10 @@ def SD_generate_with_pruning(
         first_id = sample_token.to(input_ids.device)
         len_posi = draft_input_len + 1
         # len_posi = inputs['input_ids'].shape[1] + 1
+
         tree_logits = tree_draft(first_id, draft_model, draft_past_key_values, len_posi)
         model.model.tree_mask = tree_buffers["tree_attn_mask"]
+
 
 
         new_token = 0
@@ -785,7 +803,7 @@ def SD_generate_with_pruning(
                 processor,
             )
 
-            logits, outputs = tree_decoding(
+            logits, outputs = tree_decoding( #MODIFIED
                 model,
                 tree_candidates,
                 past_key_values,
@@ -818,19 +836,7 @@ def SD_generate_with_pruning(
                 draft_input_len
             )
 
-            # if processor.tokenizer.eos_token_id in input_ids[0, input_len:].tolist():
-            #     reset_tree_mode(model)
-            #     reset_tree_mode(draft_model)
-            #     torch.cuda.synchronize()
-            #     end = time.time()
-            #     return {
-            #         'output_ids': input_ids,
-            #         'inference_time': end - infer_start,
-            #         'decoding_time': end - decode_start,
-            #         'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
-            #     }
 
-            # Currently, we mannually set the generation length for fair comparison.
             if new_token >= max_new_tokens:
                 reset_tree_mode(model)
                 reset_tree_mode(draft_model)
@@ -842,12 +848,34 @@ def SD_generate_with_pruning(
                     'decoding_time': end - decode_start,
                     'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
                     'scores': scores,
+                    'generate_len': new_token,
+                }
+
+            if processor.tokenizer.eos_token_id in input_ids[0, original_input_len:].tolist():
+                reset_tree_mode(model)
+                reset_tree_mode(draft_model)
+                torch.cuda.synchronize()
+                end = time.time()
+
+                eos_token_id = processor.tokenizer.eos_token_id
+                eos_position = (input_ids[0, original_input_len:] == eos_token_id).nonzero(as_tuple=True)
+                eos_position = eos_position[0][0].item() + original_input_len
+                generate_len = eos_position - original_input_len
+                input_ids = input_ids[:, :eos_position]
+
+                return {
+                    'output_ids': input_ids,
+                    'inference_time': end - infer_start,
+                    'decoding_time': end - decode_start,
+                    'mean_accept_length': sum(accept_length_total) / len(accept_length_total),
+                    'scores': scores,
+                    'generate_len': generate_len,
                 }
             
 
 
 @torch.no_grad()
-def AR_generate(inputs, model, max_new_tokens=100,video_token_id=151656):
+def AR_generate(inputs, model, max_new_tokens=100,video_token_id=151656, processor=None):
     torch.cuda.synchronize()
     tic1 = time.time()
 
@@ -899,7 +927,9 @@ def AR_generate(inputs, model, max_new_tokens=100,video_token_id=151656):
         torch.cuda.synchronize()
         tic2 = time.time()
         
+        generate_len = 1
         for step in range(max_new_tokens - 1):
+            generate_len += 1
             new_inputs = {
                 'input_ids': next_token,
                 'past_key_values': past_key_values,
@@ -909,6 +939,10 @@ def AR_generate(inputs, model, max_new_tokens=100,video_token_id=151656):
             next_token = torch.argmax(outputs.logits[:, -1:], dim=-1)
             generated = torch.cat([generated, next_token], dim=-1)
 
+            if processor.tokenizer.eos_token_id == next_token.item():
+                print("Generation finished as EOS token is generated.")
+                break
+
         torch.cuda.synchronize()
         toc = time.time()
         
@@ -916,6 +950,7 @@ def AR_generate(inputs, model, max_new_tokens=100,video_token_id=151656):
         'output_ids':generated,
         'inference_time':toc - tic1,
         'decoding_time':toc - tic2,
+        'generate_len':generate_len,
     }
 
 

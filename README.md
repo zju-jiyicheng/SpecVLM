@@ -34,6 +34,7 @@ Yicheng Ji*, Jun Zhang*, Heming Xia, Jinpeng Chen, Lidan Shou, Gang Chen, Huan L
 - 2025.08: Our paper <a href="https://arxiv.org/abs/2508.16201"><span style="color:#1581CC;">"SpecVLM: Enhancing Speculative Decoding of Video LLMs via Verifier-Guided Token Pruning"</span></a> has been accepted to EMNLP 2025 Main.
 - 2026.02: Our paper <a href="https://arxiv.org/abs/2603.19610"><span style="color:#1581CC;">"ParallelVLM: Lossless Video-LLM Acceleration with Visual Alignment Aware Parallel Speculative Decoding"</span></a> has been accepted to CVPR 2026.
 - 2026.04: Our paper <a href="https://arxiv.org/abs/2604.05650"><span style="color:#1581CC;">"See the Forest for the Trees: Loosely Speculative Decoding via Visual-Semantic Guidance for Efficient Inference of Video LLMs"</span></a> has been accepted to ACL 2026 Main with oral nomination. [->[Repository]](https://github.com/zju-jiyicheng/LVSpec)
+- - 2026.04: Our survey <a href="https://arxiv.org/abs/2604.05546"><span style="color:#1581CC;">"Efficient Inference for Large Vision-Language Models: Bottlenecks, Techniques, and Prospects"</span></a> has been accepted to ACL 2026 Findings. [->[Repository]](https://github.com/SuDIS-ZJU/Efficient-LVLMs-Inference)
 
 
 ## 📌  Method
